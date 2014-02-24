@@ -306,8 +306,8 @@ produce ::
   -> List a
 produce f a = a :. produce f (f a)
 
-<<<<<<< HEAD
-=======
+-- <<<<<<< HEAD
+-- =======
 -- | Do anything other than reverse a list.
 -- Is it even possible?
 --
@@ -322,7 +322,7 @@ notReverse ::
   -> List a
 notReverse =
   error "todo"
->>>>>>> 1ac89d30816a111b818d35b43d09f0df6958d596
+-- >>>>>>> 1ac89d30816a111b818d35b43d09f0df6958d596
 
 hlist ::
   List a
