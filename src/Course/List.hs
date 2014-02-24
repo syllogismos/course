@@ -72,8 +72,8 @@ headOr ::
   a
   -> List a
   -> a
-headOr =
-  error "todo"
+headOr a (Nil) = a
+headOr _ (x :. _) = x
 
 -- | The product of the elements of a list.
 --
@@ -85,8 +85,8 @@ headOr =
 product ::
   List Int
   -> Int
-product =
-  error "todo"
+product Nil = 1
+product (x :. xs) = x * product xs
 
 -- | Sum the elements of the list.
 --
@@ -100,8 +100,8 @@ product =
 sum ::
   List Int
   -> Int
-sum =
-  error "todo"
+sum Nil = 0
+sum (x :. xs) = x + sum xs
 
 -- | Return the length of the list.
 --
@@ -112,8 +112,8 @@ sum =
 length ::
   List a
   -> Int
-length =
-  error "todo"
+length Nil = 0
+length (_ :. xs) = 1 + length xs
 
 -- | Map the given function on each element of the list.
 --
@@ -127,8 +127,8 @@ map ::
   (a -> b)
   -> List a
   -> List b
-map =
-  error "todo"
+map _ Nil = Nil
+map f (x :. xs) = f x :. map f xs
 
 -- | Return elements satisfying the given predicate.
 --
@@ -144,8 +144,10 @@ filter ::
   (a -> Bool)
   -> List a
   -> List a
-filter =
-  error "todo"
+filter _ Nil = Nil
+filter f (x :. xs)
+  | f x       = x :. filter f xs
+  | otherwise = filter f xs
 
 -- | Append two lists to a new list.
 --
@@ -163,8 +165,9 @@ filter =
   List a
   -> List a
   -> List a
-(++) =
-  error "todo"
+(++) Nil ys = ys
+(++) xs Nil = xs
+(++) (x :. xs) ys = x :. xs ++ ys
 
 infixr 5 ++
 
@@ -181,8 +184,8 @@ infixr 5 ++
 flatten ::
   List (List a)
   -> List a
-flatten =
-  error "todo"
+flatten Nil = Nil
+flatten  (x :. xs) = x ++ flatten xs
 
 -- | Map a function then flatten to a list.
 --
@@ -198,8 +201,7 @@ flatMap ::
   (a -> List b)
   -> List a
   -> List b
-flatMap =
-  error "todo"
+flatMap f xs = flatten $ map f xs
 
 -- | Convert a list of optional values to an optional list of values.
 --
@@ -223,11 +225,14 @@ flatMap =
 --
 -- >>> seqOptional (Empty :. map Full infinity)
 -- Empty
-seqOptional ::
+seqOptional :: Eq a =>
   List (Optional a)
   -> Optional (List a)
-seqOptional =
-  error "todo"
+seqOptional Nil = Full Nil
+seqOptional (Empty:. _) = Empty
+seqOptional (Full a:. xs)
+  | seqOptional xs == Empty = Empty
+  | otherwise               = Full $ a :. seqOptional xs ?? Nil
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -249,8 +254,10 @@ find ::
   (a -> Bool)
   -> List a
   -> Optional a
-find =
-  error "todo"
+find _ Nil = Empty
+find f (x :. xs)
+  | f x         = Full x
+  | otherwise   = find f xs
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -268,8 +275,8 @@ find =
 lengthGT4 ::
   List a
   -> Bool
-lengthGT4 =
-  error "todo"
+lengthGT4 (_ :. _ :. _ :. _ :. _ :. _) = True
+lengthGT4 _ = False
 
 -- | Reverse a list.
 --
@@ -282,8 +289,8 @@ lengthGT4 =
 reverse ::
   List a
   -> List a
-reverse =
-  error "todo"
+reverse Nil = Nil
+reverse (x :. xs) = reverse xs ++ (x :. Nil)
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
@@ -297,22 +304,8 @@ produce ::
   (a -> a)
   -> a
   -> List a
-produce =
-  error "todo"
+produce f a = a :. produce f (f a)
 
--- | Do anything other than reverse a list.
---
--- >>> notReverse Nil
--- []
---
--- prop> let types = x :: List Int in notReverse x ++ notReverse y == notReverse (y ++ x)
---
--- prop> let types = x :: Int in notReverse (x :. Nil) == x :. Nil
-notReverse ::
-  List a
-  -> List a
-notReverse =
-  error "todo"
 
 hlist ::
   List a

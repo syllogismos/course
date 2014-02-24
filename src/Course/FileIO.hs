@@ -61,9 +61,14 @@ the contents of c
 
 -- /Tip:/ use @getArgs@ and @run@
 main ::
-  IO ()
-main =
-  error "todo"
+  IO (List ())
+main = do
+  fileName <- getArgs
+  run $ head fileName
+
+head :: List a -> a
+head Nil = error "empty list"
+head (x:._) = x
 
 type FilePath =
   Chars
@@ -71,32 +76,33 @@ type FilePath =
 -- /Tip:/ Use @getFiles@ and @printFiles@.
 run ::
   Chars
-  -> IO ()
-run =
-  error "todo"
+  -> IO (List ())
+run c = do
+  f <- getFiles $ lines c
+  printFiles f
 
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo"
+getFiles paths = sequence $ map getFile paths
 
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo"
+getFile path = do
+  chars <- readFile path
+  return (path, chars)
 
 printFiles ::
   List (FilePath, Chars)
-  -> IO ()
-printFiles =
-  error "todo"
+  -> IO (List ())
+printFiles files = sequence $ map (\(f, c) -> printFile f c) files
 
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo"
+printFile path chars = do
+  putStrLn $ "============ "++ path
+  putStrLn chars
 

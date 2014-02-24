@@ -35,29 +35,35 @@ newtype State s a =
 -- >>> runState ((+1) <$> pure 0) 0
 -- (1,0)
 instance Functor (State s) where
-  (<$>) =
-      error "todo"
+  --(<$>) f st = State k where
+  --  k = (\x -> (f $ fst $ runState st x, x))
+--(<$>) :: (a -> b) -> State s a -> State b
+  (<$>) f (State h) = State $ \s -> let (a, newState) = h s in (f a, newState)
 
 -- | Implement the `Apply` instance for `State s`.
 -- >>> runState (pure (+1) <*> pure 0) 0
 -- (1,0)
 instance Apply (State s) where
-  (<*>) =
-    error "todo"
+--(<*>) :: (State s (a -> b)) -> (State s a) -> (State s b)
+--(<*>) f st = State $ \s -> ((eval f s) (eval st s), s)
+  (<*>) (State g) (State h) = State $ \s -> let (f, s') = g s
+                                                (a, s'') = h s' 
+                                            in (f a, s'')
+
 
 -- | Implement the `Applicative` instance for `State s`.
 -- >>> runState (pure 2) 0
 -- (2,0)
 instance Applicative (State s) where
-  pure =
-    error "todo"
+  pure x = State $ (\s -> (x, s))
 
 -- | Implement the `Bind` instance for `State s`.
 -- >>> runState ((const $ put 2) =<< put 1) 0
 -- ((),2)
 instance Bind (State s) where
-  (=<<) =
-    error "todo"
+  (=<<) f (State h) = State $ \s -> let (a, newSt) = h s
+                                        (State g)  = f a
+                                    in g newSt
 
 instance Monad (State s) where
 
@@ -68,8 +74,7 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo"
+exec st s = snd $ runState st s
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
@@ -78,8 +83,7 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo"
+eval st s = fst $ runState st s
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -87,8 +91,7 @@ eval =
 -- (0,0)
 get ::
   State s s
-get =
-  error "todo"
+get = State $ \s -> (s, s)
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -97,8 +100,7 @@ get =
 put ::
   s
   -> State s ()
-put =
-  error "todo"
+put newSt = State $ \_ -> ((), newSt)
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
@@ -109,19 +111,51 @@ put =
 --   find ::  (a ->   Bool) -> List a ->    Optional a
 --   findM :: (a -> f Bool) -> List a -> f (Optional a)
 --
+-- >>> let p x = (\s -> (const $ pure (x == 'c')) =<< put (1+s)) =<< get in runState (fiterM p $ listh ['a'..'h']) 0
+-- ("c",8)
 -- >>> let p x = (\s -> (const $ pure (x == 'c')) =<< put (1+s)) =<< get in runState (findM p $ listh ['a'..'h']) 0
 -- (Full 'c',3)
 --
 -- >>> let p x = (\s -> (const $ pure (x == 'i')) =<< put (1+s)) =<< get in runState (findM p $ listh ['a'..'h']) 0
 -- (Empty,8)
+--
+-- do
+--   x <- mx
+--   y <- my
+--   return f x y
+-- f <$> mx <*> my
+
 findM ::
   Monad f =>
   (a -> f Bool)
   -> List a
   -> f (Optional a)
-findM =
-  error "todo"
+--findM _ Nil = pure Empty
+--findM f (x :. xs) = fun <$> xx <*> yy
+--  where
+--    fun flg ys = if flg then (Full x) else (ys)
+--    xx         = f x
+--    yy         = findM f xs
 
+findM _ Nil = pure Empty
+findM f (x :. xs) = f x >>= \t -> if t then pure (Full x) else findM f xs
+
+--findM f (x :. xs) = do
+--  flg <- f x
+--  if flg
+--  then pure (Full x)
+--  else findM f xs
+fiterM ::
+  Monad f =>
+  (a -> f Bool)
+  -> List a
+  -> f (List a )
+fiterM _ Nil = pure Nil
+fiterM f (x :. xs) = fun <$> xx <*> yy
+  where
+    fun a b = if a then (x :. b) else b
+    xx      = f x
+    yy      = fiterM f xs
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
 --
@@ -133,8 +167,16 @@ firstRepeat ::
   Ord a =>
   List a
   -> Optional a
-firstRepeat =
-  error "todo"
+
+firstRepeat xs = fst $ runState (foo xs) S.empty
+  where
+    foo Nil = pure Empty
+    foo (x :. xss) = (get >>= \s -> if S.member x s 
+                                    then pure (Full x) 
+                                    else addElement x >>= \_ -> foo xss)
+
+addElement :: Ord a => a -> State (S.Set a) ()
+addElement a = State $ \s -> ((), S.insert a s)
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -146,8 +188,7 @@ distinct ::
   Ord a =>
   List a
   -> List a
-distinct =
-  error "todo"
+distinct xs = listh $ S.toAscList $ S.fromList $ hlist xs
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
@@ -171,7 +212,9 @@ distinct =
 -- >>> isHappy 44
 -- True
 isHappy ::
-  Integer
+  Int
   -> Bool
-isHappy =
-  error "todo"
+isHappy x = contains 1 fstRpt
+  where
+    fstRpt = firstRepeat $ produce square x
+    square xx = sum $ map ((\r -> r * r) . digitToInt) $ listh $ show xx
