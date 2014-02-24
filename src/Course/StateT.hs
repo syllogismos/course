@@ -36,11 +36,13 @@ instance Functor f => Functor (StateT s f) where
 --
 -- >>> runStateT (pure (+2) <*> ((pure 2) :: StateT Int List Int)) 0
 -- [(4,0)]
-instance Monad f => Apply (StateT s f) where
-  (<*>) (StateT g) (StateT h) = StateT $ 
-                                       \s 
-                                       -> g s >>= \(f', s') 
-                                       -> h s' >>= \(a, s'') -> pure (f' a, s'')
+--
+-- >>> import qualified Prelude as P
+-- >>> runStateT (StateT (\s -> Full ((+2), s P.++ [1])) <*> (StateT (\s -> Full (2, s P.++ [2])))) [0]
+-- Full (4,[0,1,2])
+instance Bind f => Apply (StateT s f) where
+  (<*>) =
+    error "todo"
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Applicative f@.
 --
